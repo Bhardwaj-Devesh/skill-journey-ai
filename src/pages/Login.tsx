@@ -1,12 +1,14 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,29 +18,82 @@ const Login = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Register form state
+  const [registerName, setRegisterName] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [role, setRole] = useState('student');
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate('/dashboard');
+      }
+    };
+    
+    checkUser();
+  }, [navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else if (data.user) {
+        toast.success('Logged in successfully');
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error(error);
+    } finally {
       setIsLoading(false);
-      toast.success('Logged in successfully');
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate registration
-    setTimeout(() => {
+    try {
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
+        email: registerEmail,
+        password: registerPassword,
+        options: {
+          data: {
+            full_name: registerName,
+            role: role,
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('Account created successfully. Please check your email to verify your account.');
+        setActiveTab('login');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+      console.error(error);
+    } finally {
       setIsLoading(false);
-      toast.success('Account created successfully');
-      navigate('/dashboard');
-    }, 1500);
+    }
   };
 
   return (
@@ -75,6 +130,8 @@ const Login = () => {
                     type="email" 
                     placeholder="you@example.com" 
                     required 
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -89,6 +146,8 @@ const Login = () => {
                     type="password" 
                     placeholder="••••••••" 
                     required 
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
                   />
                 </div>
                 <Button 
@@ -109,6 +168,8 @@ const Login = () => {
                     id="register-name" 
                     placeholder="John Doe" 
                     required 
+                    value={registerName}
+                    onChange={(e) => setRegisterName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -118,6 +179,8 @@ const Login = () => {
                     type="email" 
                     placeholder="you@example.com" 
                     required 
+                    value={registerEmail}
+                    onChange={(e) => setRegisterEmail(e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -127,7 +190,30 @@ const Login = () => {
                     type="password" 
                     placeholder="••••••••" 
                     required 
+                    value={registerPassword}
+                    onChange={(e) => setRegisterPassword(e.target.value)}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="register-role">I am a</Label>
+                  <Select 
+                    value={role} 
+                    onValueChange={setRole}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="mentor">Mentor</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {role === 'mentor' && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      As a mentor, you'll be able to provide guidance to students after your account is verified.
+                    </p>
+                  )}
                 </div>
                 <Button 
                   type="submit" 
