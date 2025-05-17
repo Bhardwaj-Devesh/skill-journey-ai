@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/Navbar';
 import PhaseProgress from '@/components/PhaseProgress';
@@ -10,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ChevronRight, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 
@@ -21,98 +19,63 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchMockData = async () => {
       if (!profile) return;
       
       setLoading(true);
       try {
-        // Fetch projects
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select('*')
-          .eq('user_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(2);
+        // Mock projects data
+        const mockProjects = [
+          {
+            title: "AI Image Generator",
+            description: "A deep learning model that generates images based on text descriptions.",
+            status: "ongoing",
+            skills: ["Python", "TensorFlow", "Computer Vision"],
+            start_date: "2023-05-01",
+            end_date: "2023-07-15",
+            progress: 65,
+          },
+          {
+            title: "NLP Text Summarizer",
+            description: "An NLP tool that creates concise summaries of long articles.",
+            status: "planned",
+            skills: ["Python", "NLP", "Transformer Models"],
+            start_date: "2023-06-20",
+            progress: 20,
+          }
+        ];
+        setProjects(mockProjects);
         
-        if (projectsError) throw projectsError;
-        
-        // If no projects yet, use mock data
-        if (projectsData && projectsData.length > 0) {
-          setProjects(projectsData);
-        } else {
-          // Mock data
-          setProjects([
-            {
-              title: "AI Image Generator",
-              description: "A deep learning model that generates images based on text descriptions.",
-              status: "ongoing",
-              skills: ["Python", "TensorFlow", "Computer Vision"],
-              start_date: "2023-05-01",
-              end_date: "2023-07-15",
-              progress: 65,
-            },
-            {
-              title: "NLP Text Summarizer",
-              description: "An NLP tool that creates concise summaries of long articles.",
-              status: "planned",
-              skills: ["Python", "NLP", "Transformer Models"],
-              start_date: "2023-06-20",
-              progress: 20,
-            }
-          ]);
-        }
-        
-        // Fetch feedback
-        const { data: feedbackData, error: feedbackError } = await supabase
-          .from('mentor_feedback')
-          .select('*, profiles!mentor_feedback_mentor_id_fkey(full_name)')
-          .eq('student_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(2);
-        
-        if (feedbackError) throw feedbackError;
-        
-        // If no feedback yet, use mock data
-        if (feedbackData && feedbackData.length > 0) {
-          setFeedbackItems(feedbackData.map(item => ({
-            id: item.id,
-            mentorName: item.profiles?.full_name || 'Mentor',
-            mentorInitials: (item.profiles?.full_name || 'M')[0],
-            message: item.feedback,
-            createdAt: new Date(item.created_at),
-            status: item.status
-          })));
-        } else {
-          // Mock data
-          setFeedbackItems([
-            {
-              id: "1",
-              mentorName: "Dr. Sarah Chen",
-              mentorInitials: "SC",
-              mentorAvatar: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=300",
-              message: "Great progress on your NLP project! Consider adding a section about transformer architecture limitations in your documentation.",
-              createdAt: new Date(2023, 4, 15),
-              status: "resolved",
-            },
-            {
-              id: "2",
-              mentorName: "Prof. James Wilson",
-              mentorInitials: "JW",
-              message: "I'd recommend focusing more on practical applications of your AI model. Let's discuss this in our next meeting.",
-              createdAt: new Date(2023, 5, 2),
-              status: "pending",
-            }
-          ]);
-        }
+        // Mock feedback data
+        const mockFeedback = [
+          {
+            id: "1",
+            mentorName: "Dr. Sarah Chen",
+            mentorInitials: "SC",
+            mentorAvatar: "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&w=300",
+            message: "Great progress on your NLP project! Consider adding a section about transformer architecture limitations in your documentation.",
+            createdAt: new Date(2023, 4, 15),
+            status: "resolved",
+          },
+          {
+            id: "2",
+            mentorName: "Prof. James Wilson",
+            mentorInitials: "JW",
+            message: "I'd recommend focusing more on practical applications of your AI model. Let's discuss this in our next meeting.",
+            createdAt: new Date(2023, 5, 2),
+            status: "pending",
+          }
+        ];
+        setFeedbackItems(mockFeedback);
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error('Error setting mock data:', error);
         toast.error('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
+    fetchMockData();
   }, [profile]);
 
   return (

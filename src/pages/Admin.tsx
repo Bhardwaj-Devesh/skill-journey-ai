@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Admin = () => {
@@ -16,57 +15,90 @@ const Admin = () => {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchData = async () => {
+    const fetchMockData = async () => {
       setLoading(true);
       try {
-        // Fetch users
-        const { data: usersData, error: usersError } = await supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
+        // Mock users data
+        const mockUsers = [
+          {
+            id: '1', 
+            full_name: 'John Smith',
+            role: 'student',
+            phase: 1,
+            created_at: '2023-01-15T10:30:00Z'
+          },
+          {
+            id: '2', 
+            full_name: 'Sarah Chen',
+            role: 'mentor',
+            phase: null,
+            mentor_approved: true,
+            expertise: ['Technical Mentoring', 'Career Guidance'],
+            created_at: '2023-01-10T14:20:00Z'
+          },
+          {
+            id: '3', 
+            full_name: 'Admin User',
+            role: 'admin',
+            phase: null,
+            created_at: '2023-01-01T09:00:00Z'
+          },
+          {
+            id: '4', 
+            full_name: 'Emma Johnson',
+            role: 'student',
+            phase: 2,
+            created_at: '2023-01-20T11:45:00Z'
+          }
+        ];
+        setUsers(mockUsers);
         
-        if (usersError) throw usersError;
-        setUsers(usersData || []);
+        // Mock mentors data
+        const mockMentors = mockUsers.filter(user => user.role === 'mentor');
+        setMentors(mockMentors);
         
-        // Fetch mentors
-        const { data: mentorsData, error: mentorsError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('role', 'mentor')
-          .order('created_at', { ascending: false });
-        
-        if (mentorsError) throw mentorsError;
-        setMentors(mentorsData || []);
-        
-        // Fetch projects
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select('*, profiles(full_name)')
-          .order('created_at', { ascending: false });
-        
-        if (projectsError) throw projectsError;
-        setProjects(projectsData || []);
+        // Mock projects data
+        const mockProjects = [
+          {
+            id: '101',
+            title: 'AI Image Generator',
+            user_id: '1',
+            profiles: { full_name: 'John Smith' },
+            status: 'ongoing',
+            created_at: '2023-03-15T10:30:00Z'
+          },
+          {
+            id: '102',
+            title: 'NLP Text Summarizer',
+            user_id: '1',
+            profiles: { full_name: 'John Smith' },
+            status: 'planned',
+            created_at: '2023-04-10T14:20:00Z'
+          },
+          {
+            id: '103',
+            title: 'Deep Learning Project',
+            user_id: '4',
+            profiles: { full_name: 'Emma Johnson' },
+            status: 'completed',
+            created_at: '2023-02-20T11:45:00Z'
+          }
+        ];
+        setProjects(mockProjects);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching mock data:', error);
         toast.error('Failed to load admin data');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchData();
+    fetchMockData();
   }, []);
 
   const changeMentorStatus = async (userId: string, approved: boolean) => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ mentor_approved: approved })
-        .eq('id', userId);
-      
-      if (error) throw error;
-      
-      // Update local state
+      // Update local state only since we're not using a database yet
       setMentors(mentors.map(mentor => 
         mentor.id === userId ? { ...mentor, mentor_approved: approved } : mentor
       ));

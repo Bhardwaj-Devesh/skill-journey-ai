@@ -8,6 +8,10 @@ type UserProfile = {
   full_name: string | null;
   role: 'student' | 'mentor' | 'admin';
   phase: number;
+  mentor_approved?: boolean;
+  avatar_url?: string;
+  expertise?: string[];
+  available?: boolean;
 };
 
 type AuthContextType = {
@@ -34,12 +38,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use setTimeout to avoid deadlock with auth state change
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
+          // Since we're not using a database yet, create a mock profile based on auth metadata
+          setTimeout(() => {
+            if (session.user) {
+              const mockProfile: UserProfile = {
+                id: session.user.id,
+                full_name: session.user.user_metadata.full_name || 'User',
+                role: (session.user.user_metadata.role as 'student' | 'mentor' | 'admin') || 'student',
+                phase: 1,
+                mentor_approved: session.user.user_metadata.role === 'mentor' ? true : undefined,
+                avatar_url: session.user.user_metadata.avatar_url,
+                expertise: session.user.user_metadata.role === 'mentor' ? ['Career Guidance', 'Technical Mentoring'] : undefined,
+                available: session.user.user_metadata.role === 'mentor' ? true : undefined
+              };
+              setProfile(mockProfile);
+              setIsLoading(false);
+            }
           }, 0);
         } else {
           setProfile(null);
+          setIsLoading(false);
         }
       }
     );
@@ -50,36 +68,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setIsLoading(false);
+        // Create mock profile for initial session
+        const mockProfile: UserProfile = {
+          id: session.user.id,
+          full_name: session.user.user_metadata.full_name || 'User',
+          role: (session.user.user_metadata.role as 'student' | 'mentor' | 'admin') || 'student',
+          phase: 1,
+          mentor_approved: session.user.user_metadata.role === 'mentor' ? true : undefined,
+          avatar_url: session.user.user_metadata.avatar_url,
+          expertise: session.user.user_metadata.role === 'mentor' ? ['Career Guidance', 'Technical Mentoring'] : undefined,
+          available: session.user.user_metadata.role === 'mentor' ? true : undefined
+        };
+        setProfile(mockProfile);
       }
+      
+      setIsLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
-        setProfile(data as UserProfile);
-      }
-    } catch (error) {
-      console.error('Profile fetch error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();

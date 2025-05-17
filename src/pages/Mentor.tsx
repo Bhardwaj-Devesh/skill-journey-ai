@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import MentorFeedback from '@/components/MentorFeedback';
@@ -10,7 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+
+// Define the Expertise type to avoid type errors
+type Expertise = 'Career Guidance' | 'Study Abroad' | 'Industry Referrals' | 'Technical Mentoring' | 'Interview Preparation' | 'Academic Research';
 
 // Mock data for mentor feedback
 const feedbackItems = [
@@ -42,8 +43,6 @@ const feedbackItems = [
   }
 ];
 
-type Expertise = 'Career Guidance' | 'Study Abroad' | 'Industry Referrals' | 'Technical Mentoring' | 'Interview Preparation';
-
 type MentorProfile = {
   id: string;
   full_name: string;
@@ -70,12 +69,11 @@ const MentorPage = () => {
       setActiveTab(profile.role === 'mentor' ? 'mentor' : 'student');
     }
     
-    // Fetch mentors
+    // Fetch mentors - using mock data for now
     const fetchMentors = async () => {
       setLoadingMentors(true);
       try {
-        // This would fetch from the actual database in production
-        // For now using mock data
+        // Using mock data
         const mockMentors: MentorProfile[] = [
           {
             id: "1",
@@ -90,7 +88,7 @@ const MentorPage = () => {
           {
             id: "2",
             full_name: "Prof. James Wilson",
-            expertise: ['Study Abroad', 'Academic Research'],
+            expertise: ['Study Abroad', 'Academic Research' as Expertise],
             bio: "AI Research Lead & University Professor specializing in deep learning",
             available: true,
             meetings_count: 15,
@@ -109,7 +107,7 @@ const MentorPage = () => {
         ];
         setMentors(mockMentors);
       } catch (error) {
-        console.error("Error fetching mentors:", error);
+        console.error("Error setting mock mentors:", error);
         toast.error("Failed to load mentors");
       } finally {
         setLoadingMentors(false);
@@ -293,8 +291,11 @@ const MentorPage = () => {
                   <CardContent className="pt-6">
                     <div className="flex flex-col items-center">
                       <Avatar className="h-24 w-24 mb-4">
-                        <AvatarImage src={profile?.avatar_url} />
-                        <AvatarFallback className="text-2xl">{profile?.full_name?.[0] || 'M'}</AvatarFallback>
+                        {profile?.avatar_url ? (
+                          <AvatarImage src={profile.avatar_url} />
+                        ) : (
+                          <AvatarFallback className="text-2xl">{profile?.full_name?.[0] || 'M'}</AvatarFallback>
+                        )}
                       </Avatar>
                       <h3 className="text-xl font-medium">{profile?.full_name || 'Mentor'}</h3>
                       <p className="text-sm text-muted-foreground mt-1">AI Industry Expert</p>
@@ -329,7 +330,7 @@ const MentorPage = () => {
                         <span>+ Add Expertise</span>
                       </Button>
                     </div>
-                    <Button className="w-full mt-4" variant={profile?.available ? "default" : "outline"}>
+                    <Button className="w-full mt-4" variant="default">
                       {profile?.available ? "Available for Bookings" : "Set as Available"}
                     </Button>
                   </CardContent>
