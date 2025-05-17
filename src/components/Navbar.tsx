@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
@@ -121,62 +120,117 @@ const Navbar = () => {
                 <Menu size={20} />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <NavItems />
+            <SheetContent side="left" className="flex flex-col justify-between">
+              <div className="flex flex-col space-y-6">
+                <div className="flex items-center space-x-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-career-purple to-phase-3 flex items-center justify-center">
+                    <span className="text-white font-bold">C</span>
+                  </div>
+                  <span className="font-display font-bold text-lg">CareerAI</span>
+                </div>
+                
+                <div className="flex flex-col space-y-1">
+                  {navLinks.map((link) => {
+                    const isActive = location.pathname === link.path;
+                    
+                    return (
+                      <NavLink 
+                        key={link.path} 
+                        to={link.path}
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                          isActive 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'text-foreground/70 hover:text-foreground hover:bg-accent'
+                        }`}
+                      >
+                        <span className="mr-2">{link.icon}</span>
+                        <span>{link.name}</span>
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <div className="flex items-center space-x-2 p-2 mb-4">
+                  <Avatar>
+                    {profile?.avatar_url ? (
+                      <AvatarImage src={profile.avatar_url} />
+                    ) : (
+                      <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{profile?.full_name || 'Devesh Bhardwaj'}</p>
+                    <p className="text-xs text-foreground/70">{profile?.role || 'user'}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </Button>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
       ) : (
         /* Desktop navbar */
-        <div className="hidden md:flex md:h-screen md:flex-col md:p-4 md:border-r md:w-60 md:justify-between">
-          <div className="space-y-6">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-career-purple to-phase-3 flex items-center justify-center">
-                <span className="text-white font-bold">C</span>
+        <div className="hidden md:flex md:flex-col md:p-4 md:border-r md:w-60 md:fixed md:left-0 md:top-0 md:bottom-0 md:bg-background">
+          <div className="flex flex-col h-full">
+            <div className="space-y-6">
+              <div className="flex items-center space-x-2">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-career-purple to-phase-3 flex items-center justify-center">
+                  <span className="text-white font-bold">C</span>
+                </div>
+                <span className="font-display font-bold text-lg">CareerAI</span>
               </div>
-              <span className="font-display font-bold text-lg">CareerAI</span>
+              
+              <div className="flex flex-col space-y-1">
+                {navLinks.map((link) => {
+                  const isActive = location.pathname === link.path;
+                  
+                  return (
+                    <NavLink 
+                      key={link.path} 
+                      to={link.path}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm ${
+                        isActive 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'text-foreground/70 hover:text-foreground hover:bg-accent'
+                      }`}
+                    >
+                      <span className="mr-2">{link.icon}</span>
+                      <span>{link.name}</span>
+                    </NavLink>
+                  );
+                })}
+              </div>
             </div>
             
-            <div className="flex flex-col space-y-1">
-              {navLinks.map((link) => {
-                const isActive = location.pathname === link.path;
-                
-                return (
-                  <NavLink 
-                    key={link.path} 
-                    to={link.path}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm ${
-                      isActive 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'text-foreground/70 hover:text-foreground hover:bg-accent'
-                    }`}
-                  >
-                    <span className="mr-2">{link.icon}</span>
-                    <span>{link.name}</span>
-                  </NavLink>
-                );
-              })}
-            </div>
-          </div>
-          
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center space-x-2 p-2 border rounded-md">
-              <Avatar>
-                {profile?.avatar_url ? (
-                  <AvatarImage src={profile.avatar_url} />
-                ) : (
-                  <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
-                )}
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
-                <p className="text-xs text-foreground/70">{profile?.role || 'user'}</p>
+            <div className="mt-auto border-t pt-4">
+              <div className="flex items-center space-x-2 p-2 mb-4 border rounded-md">
+                <Avatar>
+                  {profile?.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} />
+                  ) : (
+                    <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
+                  )}
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium">{profile?.full_name || 'Devesh Bhardwaj'}</p>
+                  <p className="text-xs text-foreground/70">{profile?.role || 'user'}</p>
+                </div>
               </div>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full">
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </Button>
           </div>
         </div>
       )}

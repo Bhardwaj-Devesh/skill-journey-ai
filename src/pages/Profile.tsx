@@ -1,7 +1,8 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import SkillsRadarChart from '@/components/SkillsRadarChart';
+import ChatbotPhaseProgress from '@/components/ChatbotPhaseProgress';
+import LiveIkigaiChart from '@/components/LiveIkigaiChart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,8 +10,42 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+
+interface IkigaiData {
+  whatILove: string[];
+  whatImGoodAt: string[];
+  whatTheWorldNeeds: string[];
+  whatICanBePaidFor: string[];
+  summary?: string;
+}
 
 const Profile = () => {
+  const { user } = useAuth();
+  const email = user?.email;
+
+  const [ikigaiData, setIkigaiData] = useState<IkigaiData>({
+    whatILove: [],
+    whatImGoodAt: [],
+    whatTheWorldNeeds: [],
+    whatICanBePaidFor: [],
+    summary: ''
+  });
+
+  const [activeSection, setActiveSection] = useState<keyof IkigaiData | null>(null);
+
+  const handleUpdateIkigai = (category: keyof IkigaiData, items: string[]) => {
+    setIkigaiData(prev => ({
+      ...prev,
+      [category]: items
+    }));
+    setActiveSection(category);
+    localStorage.setItem('ikigaiData', JSON.stringify({
+      ...ikigaiData,
+      [category]: items
+    }));
+  };
+
   const handleSave = () => {
     toast.success('Profile updated successfully');
   };
@@ -19,7 +54,7 @@ const Profile = () => {
     <div className="min-h-screen flex flex-col md:flex-row">
       <Navbar />
       <div className="flex-1 p-4 md:p-6 md:ml-60">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="mb-6">
             <h1 className="text-3xl font-bold">Your Career Profile</h1>
             <p className="text-muted-foreground">
@@ -35,16 +70,45 @@ const Profile = () => {
             </TabsList>
 
             <TabsContent value="ikigai" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column - Chatbot */}
+                <div className="space-y-6">
+                  <ChatbotPhaseProgress 
+                    email={email}
+                    onUpdateIkigai={handleUpdateIkigai} 
+                  />
+                </div>
+
+                {/* Right Column - Live Ikigai Chart */}
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Live Ikigai Visualization</CardTitle>
+                      <CardDescription>Watch your Ikigai take shape as you answer questions</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <LiveIkigaiChart 
+                        email={email}
+                        activeSection={activeSection}
+                        onSectionComplete={(section) => {
+                          setActiveSection(section);
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-phase-1 flex items-center justify-center">
+                    <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
                       <span className="text-white font-bold text-xs">1</span>
                     </div>
-                    Your Ikigai Profile
+                    Your Ikigai Profile Summary
                   </CardTitle>
                   <CardDescription>
-                    Complete these sections to discover your ideal AI career path
+                    Review and edit your Ikigai profile details
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -53,7 +117,8 @@ const Profile = () => {
                     <Textarea
                       id="likes"
                       placeholder="What aspects of technology and AI excite you the most?"
-                      defaultValue="I love working with data and finding patterns. Machine learning algorithms fascinate me, especially when they can be applied to solve real-world problems. I enjoy the process of feature engineering and model optimization."
+                      value={ikigaiData.whatILove.join('\n')}
+                      onChange={(e) => handleUpdateIkigai('whatILove', e.target.value.split('\n'))}
                     />
                   </div>
                   
@@ -62,25 +127,28 @@ const Profile = () => {
                     <Textarea
                       id="skills"
                       placeholder="What technical and soft skills do you have?"
-                      defaultValue="Python programming, data analysis with pandas, basic machine learning models, clear technical communication, and problem-solving. I'm also good at breaking complex problems into manageable parts."
+                      value={ikigaiData.whatImGoodAt.join('\n')}
+                      onChange={(e) => handleUpdateIkigai('whatImGoodAt', e.target.value.split('\n'))}
                     />
                   </div>
                   
                   <div className="space-y-4">
-                    <Label htmlFor="values">What's important to you</Label>
+                    <Label htmlFor="values">What the world needs</Label>
                     <Textarea
                       id="values"
                       placeholder="What values and principles guide your career choices?"
-                      defaultValue="Ethical use of technology, continuous learning, work-life balance, collaboration, and creating solutions that help people. I want to work on projects that have a positive social impact."
+                      value={ikigaiData.whatTheWorldNeeds.join('\n')}
+                      onChange={(e) => handleUpdateIkigai('whatTheWorldNeeds', e.target.value.split('\n'))}
                     />
                   </div>
                   
                   <div className="space-y-4">
-                    <Label htmlFor="career">Career direction</Label>
+                    <Label htmlFor="career">What you can be paid for</Label>
                     <Textarea
                       id="career"
                       placeholder="What AI field or role are you most interested in?"
-                      defaultValue="I'm interested in becoming a Machine Learning Engineer with a focus on NLP applications. I'd like to work on projects that involve text analytics and language understanding."
+                      value={ikigaiData.whatICanBePaidFor.join('\n')}
+                      onChange={(e) => handleUpdateIkigai('whatICanBePaidFor', e.target.value.split('\n'))}
                     />
                   </div>
                 </CardContent>
@@ -190,7 +258,12 @@ const Profile = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" defaultValue="student@careerai.com" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={email}
+                      readOnly
+                    />
                   </div>
                   
                   <div className="space-y-2">
