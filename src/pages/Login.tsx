@@ -29,6 +29,24 @@ const Login = () => {
   const [registerPassword, setRegisterPassword] = useState('');
   const [role, setRole] = useState('student');
 
+  // Clean up auth state
+  const cleanupAuthState = () => {
+    // Remove standard auth tokens
+    localStorage.removeItem('supabase.auth.token');
+    // Remove all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    // Remove from sessionStorage if in use
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
@@ -46,6 +64,16 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Clean up existing auth state
+      cleanupAuthState();
+      
+      // Try global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (error) {
+        // Continue even if this fails
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password: loginPassword,
@@ -70,6 +98,16 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Clean up existing auth state
+      cleanupAuthState();
+      
+      // Try global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (error) {
+        // Continue even if this fails
+      }
+
       // Sign up the user
       const { data, error } = await supabase.auth.signUp({
         email: registerEmail,
@@ -236,10 +274,10 @@ const Login = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Button variant="outline" type="button">
+            <Button variant="outline" type="button" disabled>
               Google
             </Button>
-            <Button variant="outline" type="button">
+            <Button variant="outline" type="button" disabled>
               GitHub
             </Button>
           </div>

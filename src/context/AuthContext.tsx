@@ -31,16 +31,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state change listener
+    // Set up auth state change listener - must be set up before getSession
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+      (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setIsLoading(false);
+          return;
+        }
         
-        if (session?.user) {
-          // Since we're not using a database yet, create a mock profile based on auth metadata
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          
+          // Add slight delay before additional Supabase calls to avoid deadlocks
           setTimeout(() => {
-            if (session.user) {
+            if (session.user && !isLoading) {
+              // Create a mock profile based on user metadata
               const mockProfile: UserProfile = {
                 id: session.user.id,
                 full_name: session.user.user_metadata.full_name || 'User',
@@ -52,38 +61,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 available: session.user.user_metadata.role === 'mentor' ? true : undefined
               };
               setProfile(mockProfile);
-              setIsLoading(false);
             }
+            setIsLoading(false);
           }, 0);
         } else {
-          setProfile(null);
           setIsLoading(false);
         }
       }
     );
 
     // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        // Create mock profile for initial session
-        const mockProfile: UserProfile = {
-          id: session.user.id,
-          full_name: session.user.user_metadata.full_name || 'User',
-          role: (session.user.user_metadata.role as 'student' | 'mentor' | 'admin') || 'student',
-          phase: 1,
-          mentor_approved: session.user.user_metadata.role === 'mentor' ? true : undefined,
-          avatar_url: session.user.user_metadata.avatar_url,
-          expertise: session.user.user_metadata.role === 'mentor' ? ['Career Guidance', 'Technical Mentoring'] : undefined,
-          available: session.user.user_metadata.role === 'mentor' ? true : undefined
-        };
-        setProfile(mockProfile);
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          
+          // Create mock profile for initial session
+          const mockProfile: UserProfile = {
+            id: session.user.id,
+            full_name: session.user.user_metadata.full_name || 'User',
+            role: (session.user.user_metadata.role as 'student' | 'mentor' | 'admin') || 'student',
+            phase: 1,
+            mentor_approved: session.user.user_metadata.role === 'mentor' ? true : undefined,
+            avatar_url: session.user.user_metadata.avatar_url,
+            expertise: session.user.user_metadata.role === 'mentor' ? ['Career Guidance', 'Technical Mentoring'] : undefined,
+            available: session.user.user_metadata.role === 'mentor' ? true : undefined
+          };
+          setProfile(mockProfile);
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
+    
+    checkSession();
 
     return () => {
       subscription.unsubscribe();
@@ -91,8 +106,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
+    try {
+      // Clean up existing auth state
+      const cleanupAuthState = () => {
+        // Remove standard auth tokens
+        localStorage.removeItem('supabase.auth.token');
+        // Remove all Supabase auth keys from localStorage
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            localStorage.removeItem(key);
+          }
+        });
+        // Remove from sessionStorage if in use
+        Object.keys(sessionStorage || {}).forEach((key) => {
+          if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+            sessionStorage.removeItem(key);
+          }
+        });
+      };
+      
+      cleanupAuthState();
+      
+      // Sign out with global scope to ensure complete signout across all tabs/windows
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear state
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

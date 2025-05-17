@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   User, 
@@ -8,13 +8,14 @@ import {
   MessageCircle, 
   Settings, 
   LogOut,
-  Menu,
-  X
+  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const navLinks = [
   { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard size={20} /> },
@@ -28,6 +29,19 @@ const Navbar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [open, setOpen] = React.useState(false);
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Failed to sign out');
+    }
+  };
 
   const NavItems = () => (
     <>
@@ -63,12 +77,15 @@ const Navbar = () => {
       <div className={`${isMobile ? 'mt-auto pt-4 border-t' : ''}`}>
         <div className="flex items-center space-x-2">
           <Avatar>
-            <AvatarImage src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=300" />
-            <AvatarFallback>AI</AvatarFallback>
+            {profile?.avatar_url ? (
+              <AvatarImage src={profile.avatar_url} />
+            ) : (
+              <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
+            )}
           </Avatar>
           <div className={`${isMobile ? 'block' : 'hidden md:block'}`}>
-            <p className="text-sm font-medium">AI Student</p>
-            <p className="text-xs text-foreground/70">student@careerai.com</p>
+            <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+            <p className="text-xs text-foreground/70">{profile?.role || 'user'}</p>
           </div>
         </div>
       </div>
@@ -77,7 +94,7 @@ const Navbar = () => {
         <Button 
           variant="outline" 
           className="mt-4 w-full" 
-          onClick={() => setOpen(false)}
+          onClick={handleSignOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
@@ -142,15 +159,24 @@ const Navbar = () => {
             </div>
           </div>
           
-          <div className="flex items-center space-x-2 p-2 border rounded-md">
-            <Avatar>
-              <AvatarImage src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?auto=format&fit=crop&w=300" />
-              <AvatarFallback>AI</AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium">AI Student</p>
-              <p className="text-xs text-foreground/70">student@careerai.com</p>
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center space-x-2 p-2 border rounded-md">
+              <Avatar>
+                {profile?.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} />
+                ) : (
+                  <AvatarFallback>{profile?.full_name?.[0] || 'U'}</AvatarFallback>
+                )}
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium">{profile?.full_name || 'User'}</p>
+                <p className="text-xs text-foreground/70">{profile?.role || 'user'}</p>
+              </div>
             </div>
+            <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </Button>
           </div>
         </div>
       )}
